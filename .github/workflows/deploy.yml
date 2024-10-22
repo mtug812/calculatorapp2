@@ -12,47 +12,45 @@ jobs:
 
       - name: Build Docker Image
         run: |
-          docker build -t mtug812/calculatorapp2:latest -f C:\Users\maria\Desktop\my-node-app\Dockerfile C:\Users\maria\Desktop\my-node-app
-
+          docker build -t "${{ secrets.DOCKERHUB_USERNAME }}"/mycalcapp:latest .
+      
       - name: Docker Login
         run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
-      - name: Docker Push
+      - name: Docker push
         run: |
-          docker push "${{ secrets.DOCKERHUB_USERNAME }}/calculatorapp2:latest"
+          docker push "${{ secrets.DOCKERHUB_USERNAME }}"/mycalcapp:latest
 
       - name: Set up SSH
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/meinPrivateKey
+          echo "${{ secrets.SSH_KEY}}" > ~/.ssh/meinPrivateKey
           chmod 600 ~/.ssh/meinPrivateKey
-          ssh-keyscan -H ${{ secrets.EC2_IP }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H ${{secrets.EC2_IP}} >> ~/.ssh/known_hosts
 
       - name: SSH Connection to EC2
         run: |
-          ssh -i ~/.ssh/meinPrivateKey ec2-user@${{ secrets.EC2_IP }} << 'ENDSSH'
+          ssh -i ~/.ssh/meinPrivateKey ec2-user@${{ secrets.EC2_IP }} << 'ENDSSH'    
               sudo yum update -y
               sudo yum upgrade -y
-              sudo yum install -y docker
+              sudo yum install docker -y
               sudo systemctl enable docker.service
               sudo systemctl start docker
               sudo usermod -aG docker ec2-user
-              sudo docker pull "${{ secrets.DOCKERHUB_USERNAME }}/calculatorapp2:latest"
+              sudo docker pull "${{ secrets.DOCKERHUB_USERNAME }}"/mycalcapp:latest
           ENDSSH
 
-      - name: Stop and Remove Existing Docker Containers
-        run: |
-          ssh -i ~/.ssh/meinPrivateKey ec2-user@${{ secrets.EC2_IP }} << 'ENDSSH'
-              docker stop calculatorapp2 || true
-              docker rm calculatorapp2 || true
-          ENDSSH
 
       - name: Start Docker Container on EC2 instance
         run: |
-          ssh -i ~/.ssh/meinPrivateKey ec2-user@${{ secrets.EC2_IP }} << 'ENDSSH'
-              docker run -d -p 80:3000 --name calculatorapp2 "${{ secrets.DOCKERHUB_USERNAME }}/calculatorapp2:latest"
-          ENDSSH
+            ssh -i ~/.ssh/meinPrivateKey ec2-user@${{ secrets.EC2_IP }} << 'ENDSSH'
+                if [ $(docker ps -q -f name=mycalcapp) ]; then
+                    echo "Stopping and removing the existing mycalcapp container..."
+                    docker stop mycalcapp
+                    docker rm mycalcapp
+                else
+                    echo "No existing mycalcapp container running."
+                fi
 
-      - name: Clean Up SSH Key File (optional)
-        run: |
-          rm ~/.ssh/meinPrivateKey
+                docker run -d -p 80:3000 --name mycalcapp "${{ secrets.DOCKERHUB_USERNAME }}"/mycalcapp:latest
+            ENDSSH

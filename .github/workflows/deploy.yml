@@ -12,14 +12,14 @@ jobs:
 
       - name: Build Docker Image
         run: |
-          docker build -t "${{ secrets.DOCKERHUB_USERNAME }}"/mycalcapp:latest .
+          docker build -t "${{ secrets.DOCKERHUB_USERNAME }}"/mycalc2:latest .
       
       - name: Docker Login
         run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
       - name: Docker push
         run: |
-          docker push "${{ secrets.DOCKERHUB_USERNAME }}"/mycalcapp:latest
+          docker push "${{ secrets.DOCKERHUB_USERNAME }}"/mycalc2:latest
 
       - name: Set up SSH
         run: |
@@ -37,20 +37,19 @@ jobs:
               sudo systemctl enable docker.service
               sudo systemctl start docker
               sudo usermod -aG docker ec2-user
-              sudo docker pull "${{ secrets.DOCKERHUB_USERNAME }}"/mycalcapp:latest
+              sudo docker pull "${{ secrets.DOCKERHUB_USERNAME }}"/mycalc2:latest
           ENDSSH
-
 
       - name: Start Docker Container on EC2 instance
         run: |
             ssh -i ~/.ssh/meinPrivateKey ec2-user@${{ secrets.EC2_IP }} << 'ENDSSH'
-                if [ $(docker ps -q -f name=mycalcapp) ]; then
-                    echo "Stopping and removing the existing mycalcapp container..."
-                    docker stop mycalcapp
-                    docker rm mycalcapp
+                if [ $(docker ps -q -f name=mycalc2) ]; then
+                    echo "Stopping and removing the existing mycalc2 container..."
+                    docker stop mycalc2
+                    docker rm mycalc2
                 else
-                    echo "No existing mycalcapp container running."
+                    echo "No existing mycalc2 container running."
                 fi
 
-                docker run -d -p 80:3000 --name mycalcapp "${{ secrets.DOCKERHUB_USERNAME }}"/mycalcapp:latest
+                docker run -d -p 80:3000 --name mycalc2 "${{ secrets.DOCKERHUB_USERNAME }}"/mycalc2:latest
             ENDSSH

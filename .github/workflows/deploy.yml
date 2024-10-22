@@ -12,7 +12,7 @@ jobs:
 
       - name: Build Docker Image
         run: |
-          docker build -t mtug812/calculatorapp2:latest .
+          docker build -t mtug812/calculatorapp2:latest -f C:\Users\maria\Desktop\my-node-app\Dockerfile C:\Users\maria\Desktop\my-node-app
 
       - name: Docker Login
         run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
